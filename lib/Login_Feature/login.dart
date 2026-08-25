@@ -2,7 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import 'PasswordLogin.dart';
-import 'Register/Presentaion/OTPRegister.dart';
+import 'Register/Presentaion/OTPRregister.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -36,7 +36,7 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: Colors.yellow),
+        borderSide: const BorderSide(color: Color.fromARGB(255, 18, 162, 119)),
       ),
       suffixIcon: suffixIcon,
     );
@@ -51,7 +51,7 @@ class _LoginScreenState extends State<LoginScreen> {
       height: 50,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor: enabled ?  Colors.yellow[600] : Colors.grey,
+          backgroundColor: enabled ?  Color.fromARGB(255, 18, 162, 119) : Colors.grey,
         ),
         onPressed: enabled ? onPressed : null,
         child: isLoading? const CircularProgressIndicator(): const Text(

@@ -12,7 +12,7 @@ class OtpRegisterScreen extends StatefulWidget {
   final String email;
 
 
-  OtpRegisterScreen({super.key, required this.email});
+  const OtpRegisterScreen({super.key, required this.email});
 
   @override
   State<OtpRegisterScreen> createState() => _OtpScreenState();
@@ -40,8 +40,12 @@ class _OtpScreenState extends State<OtpRegisterScreen> {
   @override
   void dispose() {
     _timer?.cancel();
-    for (final c in _controllers) c.dispose();
-    for (final f in _focusNodes) f.dispose();
+    for (final c in _controllers) {
+      c.dispose();
+    }
+    for (final f in _focusNodes) {
+      f.dispose();
+    }
     super.dispose();
   }
 
@@ -117,7 +121,7 @@ class _OtpScreenState extends State<OtpRegisterScreen> {
           child: LinearProgressIndicator(
             minHeight: 4,
             borderRadius: BorderRadius.circular(20),
-            value: progress,backgroundColor: Colors.grey.shade300,color: Colors.yellow[600],))),
+            value: progress,backgroundColor: Colors.grey.shade300,color: Color.fromARGB(255, 18, 162, 119),))),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -184,7 +188,7 @@ class _OtpScreenState extends State<OtpRegisterScreen> {
                       decoration:  InputDecoration(
                         counterText: '',
                         filled: true,
-                        fillColor: hasDigit?Colors.yellow[200]:Colors.white70 ,
+                        fillColor: hasDigit?Color.fromARGB(255, 18, 162, 119):Colors.white70 ,
                         border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8)
                         ),
@@ -239,7 +243,7 @@ class _OtpScreenState extends State<OtpRegisterScreen> {
                 height: 50,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: enabled ?  Colors.yellow[600] : Colors.grey,
+                    backgroundColor: enabled ?  Color.fromARGB(255, 18, 162, 119) : Colors.grey,
                   ),
                   onPressed: enabled ? _verifyOtp : null,
                   child: const Text(

@@ -54,7 +54,7 @@ class _PasswordScreenState extends State<PasswordScreen> {
             child: LinearProgressIndicator(
               minHeight: 4,
               borderRadius: BorderRadius.circular(20),
-              value: progress,backgroundColor: Colors.grey.shade300,color:  Colors.yellow[600],))),
+              value: progress,backgroundColor: Colors.grey.shade300,color:  Color.fromARGB(255, 18, 162, 119),))),
         body: Padding(
           padding: const EdgeInsets.all(10),
           child: Column(
@@ -83,7 +83,7 @@ class _PasswordScreenState extends State<PasswordScreen> {
                   ),
                   focusedBorder:  OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: Colors.yellow),
+                    borderSide: const BorderSide(color: Color.fromARGB(255, 18, 162, 119)),
                   ),
                   suffixIcon: IconButton(
                     icon: Icon(
@@ -118,7 +118,7 @@ class _PasswordScreenState extends State<PasswordScreen> {
                   ),
                   focusedBorder:  OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: Colors.yellow),
+                    borderSide: const BorderSide(color: Color.fromARGB(255, 18, 162, 119)),
                   ),
                    suffixIcon: IconButton(
                      icon: Icon(
@@ -159,7 +159,7 @@ class _PasswordScreenState extends State<PasswordScreen> {
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: isValid
-                        ? Colors.yellow[600] : Colors.grey,
+                        ? Color.fromARGB(255, 18, 162, 119) : Colors.grey,
                   ),
                   onPressed: isValid
                       ? () {

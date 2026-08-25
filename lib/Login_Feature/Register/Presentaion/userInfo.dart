@@ -26,7 +26,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
           child: LinearProgressIndicator(
             minHeight: 4,
             borderRadius: BorderRadius.circular(20),
-            value: progress,backgroundColor: Colors.grey.shade300,color:  Colors.yellow[600],))),
+            value: progress,backgroundColor: Colors.grey.shade300,color:  Color.fromARGB(255, 18, 162, 119),))),
       body: Padding(
         padding: const EdgeInsets.all(10),
         child: Column(
@@ -57,7 +57,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Colors.yellow),
+                  borderSide: const BorderSide(color: Color.fromARGB(255, 18, 162, 119)),
                 ),
 
               ),
@@ -96,7 +96,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: Colors.yellow),
+                    borderSide: const BorderSide(color: Color.fromARGB(255, 18, 162, 119)),
                   ),
                   suffixIcon: Icon(Icons.date_range),
                 ),
@@ -153,7 +153,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: widget.data.acceptedTerms
-                       ?  Colors.yellow[600]: Colors.grey,
+                       ?  Color.fromARGB(255, 18, 162, 119): Colors.grey,
                 ),
                 onPressed: widget.data.acceptedTerms && _nameController.text.isNotEmpty
                     ? () => Navigator.push(

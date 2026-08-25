@@ -9,7 +9,7 @@ class OtpScreen extends StatefulWidget {
   final String email;
 
 
-   OtpScreen({super.key, required this.email});
+   const OtpScreen({super.key, required this.email});
 
   @override
   State<OtpScreen> createState() => _OtpScreenState();
@@ -36,8 +36,12 @@ class _OtpScreenState extends State<OtpScreen> {
   @override
   void dispose() {
     _timer?.cancel();
-    for (final c in _controllers) c.dispose();
-    for (final f in _focusNodes) f.dispose();
+    for (final c in _controllers) {
+      c.dispose();
+    }
+    for (final f in _focusNodes) {
+      f.dispose();
+    }
     super.dispose();
   }
 
@@ -171,7 +175,7 @@ class _OtpScreenState extends State<OtpScreen> {
                       decoration:  InputDecoration(
                         counterText: '',
                         filled: true,
-                        fillColor: hasDigit?Colors.yellow[200]:Colors.white70 ,
+                        fillColor: hasDigit?Color.fromARGB(255, 18, 162, 119):Colors.white70 ,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8)
                         ),
@@ -235,7 +239,7 @@ class _OtpScreenState extends State<OtpScreen> {
                 height: 50,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: enabled ?  Colors.yellow[600] : Colors.grey,
+                    backgroundColor: enabled ?  Color.fromARGB(255, 18, 162, 119) : Colors.grey,
                   ),
                   onPressed: enabled ? _verifyOtp : null,
                   child: const Text(

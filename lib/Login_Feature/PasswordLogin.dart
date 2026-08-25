@@ -29,7 +29,7 @@ class _PassLoginState extends State<PassLogin> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: Colors.yellow),
+        borderSide: const BorderSide(color: Color.fromARGB(255, 18, 162, 119)),
       ),
       suffixIcon: suffixIcon,
     );
@@ -45,7 +45,7 @@ class _PassLoginState extends State<PassLogin> {
       height: 50,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor: enabled ?  Colors.yellow[600] : Colors.grey,
+          backgroundColor: enabled ?  Color.fromARGB(255, 18, 162, 119) : Colors.grey,
         ),
         onPressed: enabled ? onPressed : null,
         child:  const Text(

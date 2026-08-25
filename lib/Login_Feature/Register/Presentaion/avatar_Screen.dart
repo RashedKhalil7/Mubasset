@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:math';
 
 import 'package:mubasset/Home_Feature/home.dart';
 import 'package:flutter/material.dart';
@@ -46,7 +45,7 @@ class _AvatarScreenState extends State<AvatarScreen> {
           child: LinearProgressIndicator(
             minHeight: 4,
             borderRadius: BorderRadius.circular(20),
-            value: progress,backgroundColor: Colors.grey.shade300,color:  Colors.yellow[600],))),
+            value: progress,backgroundColor: Colors.grey.shade300,color:  Color.fromARGB(255, 18, 162, 119),))),
         body: Padding(
           padding: EdgeInsets.all(15),
           child: Column(
@@ -77,7 +76,7 @@ class _AvatarScreenState extends State<AvatarScreen> {
                     },
                     child: CircleAvatar(
                       radius: 30,
-                      backgroundColor: Colors.yellow,
+                      backgroundColor: Color.fromARGB(255, 18, 162, 119),
                       child: Icon(image==null?Icons.add:Icons.edit, size:20),
                     ),
                   ),
@@ -105,7 +104,7 @@ class _AvatarScreenState extends State<AvatarScreen> {
                 width: double.infinity,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor:  Colors.yellow[600]
+                    backgroundColor:  Color.fromARGB(255, 18, 162, 119)
                   ),
                   onPressed: () {
                 go();
