@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../data/SignData.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../services/api_service.dart';
 
 class AvatarScreen extends StatefulWidget {
   final SignUpData data;
@@ -18,7 +19,8 @@ class _AvatarScreenState extends State<AvatarScreen> {
   double progress=4/6;
   File? image;
   final imagePicker=ImagePicker();
-  
+  bool isLoading = false;
+
   Future<void> pickImage()async{
     final XFile? pick=await imagePicker.pickImage(source: ImageSource.gallery);
       if(pick != null){
@@ -30,10 +32,57 @@ class _AvatarScreenState extends State<AvatarScreen> {
   }
   
   
-  void go(){
-    Navigator.push(context, MaterialPageRoute(builder: (_)=>HomeScreen()));
-    debugPrint(widget.data.toJson().toString());
+Future<void> go() async {
+  setState(() {
+    isLoading = true;
+  });
+
+  try {
+    final response = await ApiService.register(
+      registrationToken: widget.data.registrationToken,
+      fullName: widget.data.fullName,
+      dateOfBirth: widget.data.dateOfBirth?.toIso8601String(),
+      password: widget.data.password,
+      confirmPassword: widget.data.confirmPassword,
+      acceptedTerms: widget.data.acceptedTerms,
+      acceptedOffers: widget.data.acceptedOffers,
+      email: widget.data.email.isNotEmpty
+          ? widget.data.email
+          : null,
+      phoneNumber: widget.data.phoneNumber.isNotEmpty
+          ? widget.data.phoneNumber
+          : null,
+      avatarPath: widget.data.avatarPath,
+    );
+
+    debugPrint('REGISTER RESPONSE: $response');
+
+    if (!mounted) return;
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const HomeScreen(),
+      ),
+    );
+  } catch (e) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          e.toString().replaceFirst('Exception: ', ''),
+        ),
+      ),
+    );
+  } finally {
+    if (mounted) {
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -106,13 +155,18 @@ class _AvatarScreenState extends State<AvatarScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor:  Color.fromARGB(255, 18, 162, 119)
                   ),
-                  onPressed: () {
-                go();
-                    // Send to database here
-                  },
-                  child: const Text('Continue'),
+                  onPressed: isLoading ? null : go,
+                  child: isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : const Text('Continue'),
+                    ),
                 ),
-              ),
             ],
           ),
         ),

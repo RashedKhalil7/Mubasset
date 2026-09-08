@@ -3,10 +3,9 @@ import 'package:mubasset/Login_Feature/Register/Presentaion/userInfo.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../PasswordLogin.dart';
 import '../../login.dart';
 import '../data/SignData.dart';
-
+import '../../../services/api_service.dart';
 
 class OtpRegisterScreen extends StatefulWidget {
   final String email;
@@ -19,6 +18,7 @@ class OtpRegisterScreen extends StatefulWidget {
 }
 
 class _OtpScreenState extends State<OtpRegisterScreen> {
+  bool _isLoading = false;
   double progress=1/6;
   final List<TextEditingController> _controllers =
   List.generate(4, (_) => TextEditingController());
@@ -95,20 +95,79 @@ class _OtpScreenState extends State<OtpRegisterScreen> {
   String get _otpCode =>
       _controllers.map((c) => c.text).join();
 
-  void _verifyOtp() {
-    if (_otpCode.length < 4) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enter complete OTP')),
-      );
-      return;
-    }
-    SignUpData data=SignUpData();
-    data.email=widget.email;
-    Navigator.pushReplacement(context, MaterialPageRoute(builder: (_)=>UserInfoScreen(data: data)));
-    // 🔌 READY FOR BACKEND
-    // Send _otpCode to API / Firebase / Database
-    debugPrint('OTP entered: $_otpCode');
+  Future<void> _verifyOtp() async {
+  if (_otpCode.length < 4) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Please enter the 4-digit OTP'),
+      ),
+    );
+    return;
   }
+
+  setState(() {
+    _isLoading = true;
+  });
+
+  try {
+    final response = await ApiService.verifyOtp(
+      identifier: widget.email,
+      otp: _otpCode,
+      purpose: 'register',
+    );
+
+    final registrationToken =
+        response['registrationToken'];
+
+    if (registrationToken == null ||
+        registrationToken.toString().isEmpty) {
+      throw Exception(
+        'Registration token was not returned by the server',
+      );
+    }
+
+    // Create the registration data
+    final SignUpData data = SignUpData();
+
+    // Store the identifier
+    if (widget.email.contains('@')) {
+      data.email = widget.email;
+    } else {
+      data.phoneNumber = widget.email;
+    }
+
+    // Store the token returned by Django
+    data.registrationToken =
+        registrationToken.toString();
+
+    if (!mounted) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => UserInfoScreen(
+          data: data,
+        ),
+      ),
+    );
+  } catch (e) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          e.toString().replaceFirst('Exception: ', ''),
+        ),
+      ),
+    );
+  } finally {
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -245,11 +304,19 @@ class _OtpScreenState extends State<OtpRegisterScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: enabled ?  Color.fromARGB(255, 18, 162, 119) : Colors.grey,
                   ),
-                  onPressed: enabled ? _verifyOtp : null,
-                  child: const Text(
-                    'Verify',
-                    style: TextStyle(color: Colors.black),
-                  ),
+                  onPressed: enabled && !_isLoading ? _verifyOtp : null,
+                  child: _isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Text(
+                        'Verify',
+                        style: TextStyle(color: Colors.black),
+                      ),
                 ),
               )
 

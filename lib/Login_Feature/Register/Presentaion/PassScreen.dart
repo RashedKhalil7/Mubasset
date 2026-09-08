@@ -163,7 +163,8 @@ class _PasswordScreenState extends State<PasswordScreen> {
                   ),
                   onPressed: isValid
                       ? () {
-                    widget.data.password = _passwordController.text;
+                        widget.data.password = _passwordController.text;
+                        widget.data.confirmPassword = _confirmController.text;
                     Navigator.push(
                       context,
                       MaterialPageRoute(
