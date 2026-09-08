@@ -1,4 +1,76 @@
-# Miscellaneous
+# =========================
+# Flutter / Dart
+# =========================
+
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+build/
+**/build/
+coverage/
+
+# Flutter generated files
+**/ios/Flutter/.last_build_id
+
+# Dart documentation
+**/doc/api/
+
+# Symbolication / obfuscation
+app.*.symbols
+app.*.map.json
+
+
+# =========================
+# Django / Python
+# =========================
+
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Django database
+*.sqlite3
+*.sqlite3-journal
+
+# Environment variables / secrets
+.env
+.env.*
+!.env.example
+
+# Django static/media files
+backend/staticfiles/
+backend/media/
+
+# Python tooling
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+
+# =========================
+# IDE / OS
+# =========================
+
+*.iml
+*.ipr
+*.iws
+.idea/
+.vscode/
+
+.DS_Store
+*.swp
+*.swo
+*.log
+.history/# Miscellaneous
 *.class
 *.log
 *.pyc
