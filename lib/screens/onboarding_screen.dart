@@ -20,7 +20,7 @@ class OnboardingScreen extends StatelessWidget {
           Image.asset(
             'assets/images/onboarding.png',
             fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) {
+            errorBuilder: (_, _, _) {
               return const ColoredBox(color: Color(0xFF19231F));
             },
           ),
@@ -234,7 +234,7 @@ class _GoogleLogo extends StatelessWidget {
       height: 26,
 
       // Fallback if Google logo is not found
-      errorBuilder: (_, __, ___) {
+      errorBuilder: (_, _, _) {
         return Container(
           width: 26,
           height: 26,

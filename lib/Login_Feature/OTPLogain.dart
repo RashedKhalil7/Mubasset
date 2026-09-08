@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../Home_Feature/home.dart';
 import 'PasswordLogin.dart';
 import 'login.dart';
+import '../services/api_service.dart';
 
 class OtpScreen extends StatefulWidget {
   final String email;
@@ -16,6 +17,7 @@ class OtpScreen extends StatefulWidget {
 }
 
 class _OtpScreenState extends State<OtpScreen> {
+  bool _isLoading = false;
   final List<TextEditingController> _controllers =
   List.generate(4, (_) => TextEditingController());
    bool isFill=false;
@@ -91,17 +93,51 @@ class _OtpScreenState extends State<OtpScreen> {
   String get _otpCode =>
       _controllers.map((c) => c.text).join();
 
-  void _verifyOtp() {
+  Future<void> _verifyOtp() async {
     if (_otpCode.length < 4) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enter complete OTP')),
+        const SnackBar(
+          content: Text('Please enter the complete OTP'),
+        ),
       );
       return;
     }
-    Navigator.pushReplacement(context, MaterialPageRoute(builder: (_)=>HomeScreen()));
-    // 🔌 READY FOR BACKEND
-    // Send _otpCode to API / Firebase / Database
-    debugPrint('OTP entered: $_otpCode');
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await ApiService.loginWithOtp(
+        identifier: widget.email,
+        otp: _otpCode,
+      );
+
+      if (!mounted) return;
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const HomeScreen(),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            e.toString().replaceFirst('Exception: ', ''),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -239,16 +275,25 @@ class _OtpScreenState extends State<OtpScreen> {
                 height: 50,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: enabled ?  Color.fromARGB(255, 18, 162, 119) : Colors.grey,
+                    backgroundColor: enabled && !_isLoading
+                        ? const Color.fromARGB(255, 18, 162, 119)
+                        : Colors.grey,
                   ),
-                  onPressed: enabled ? _verifyOtp : null,
-                  child: const Text(
-                    'Verify',
-                    style: TextStyle(color: Colors.black),
-                  ),
+                  onPressed: enabled && !_isLoading ? _verifyOtp : null,
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text(
+                          'Verify',
+                          style: TextStyle(color: Colors.black),
+                        ),
                 ),
               )
-
             ],
           ),
         ),

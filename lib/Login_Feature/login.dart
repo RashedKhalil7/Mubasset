@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'PasswordLogin.dart';
 import 'Register/Presentaion/OTPRregister.dart';
+import '../services/api_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -12,16 +13,24 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final emailController = TextEditingController();
+  final identifierController = TextEditingController();
 
+  bool isidentifierValid = false;
+  bool isLoading = false;
 
-  bool isEmailValid = false;
-
-  bool isLoading=false;
-
-
+  // Email validation
   final emailRegex =
-  RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+      RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,}$');
+
+  // Phone validation
+  final phoneRegex =
+      RegExp(r'^\+?[0-9]{9,15}$');
+
+  @override
+  void dispose() {
+    identifierController.dispose();
+    super.dispose();
+  }
 
   InputDecoration inputDecoration({
     required String label,
@@ -36,7 +45,9 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: Color.fromARGB(255, 18, 162, 119)),
+        borderSide: const BorderSide(
+          color: Color.fromARGB(255, 18, 162, 119),
+        ),
       ),
       suffixIcon: suffixIcon,
     );
@@ -51,123 +62,253 @@ class _LoginScreenState extends State<LoginScreen> {
       height: 50,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor: enabled ?  Color.fromARGB(255, 18, 162, 119) : Colors.grey,
+          backgroundColor: enabled && !isLoading
+              ? const Color.fromARGB(255, 18, 162, 119)
+              : Colors.grey,
         ),
-        onPressed: enabled ? onPressed : null,
-        child: isLoading? const CircularProgressIndicator(): const Text(
-          'Continue',
-          style: TextStyle(color: Colors.black),
+        onPressed: enabled && !isLoading ? onPressed : null,
+        child: isLoading
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                ),
+              )
+            : const Text(
+                'Continue',
+                style: TextStyle(
+                  color: Colors.black,
+                ),
+              ),
+      ),
+    );
+  }
+
+  // --------------------------------------------------
+  // CHECK IDENTIFIER
+  // --------------------------------------------------
+
+  Future<void> _continue() async {
+    final identifier = identifierController.text.trim();
+
+    if (identifier.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter your email or phone number'),
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      // Ask Django if this email/phone already exists
+      final result = await ApiService.checkIdentifier(identifier);
+
+      print('CHECK IDENTIFIER RESPONSE: $result');
+
+      final exists = result['exists'] == true;
+
+      if (!mounted) return;
+
+      // --------------------------------------------------
+      // EXISTING USER
+      // --------------------------------------------------
+
+      if (exists) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PassLogin(
+              email: identifier,
+            ),
+          ),
+        );
+      }
+
+      // --------------------------------------------------
+      // NEW USER
+      // --------------------------------------------------
+
+      else {
+        // Send registration OTP
+        await ApiService.sendOtp(
+          identifier: identifier,
+          purpose: 'register',
+        );
+
+        if (!mounted) return;
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => OtpRegisterScreen(
+              email: identifier,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            e.toString().replaceFirst('Exception: ', ''),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+
+      appBar: AppBar(
+        leading: IconButton(
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          icon: const Icon(Icons.arrow_back),
+        ),
+      ),
+
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+
+          child: Column(
+            children: [
+
+              // --------------------------------------------------
+              // CONTENT
+              // --------------------------------------------------
+
+              Expanded(
+                child: _identifierWidget(),
+              ),
+
+              // --------------------------------------------------
+              // TERMS
+              // --------------------------------------------------
+
+              RichText(
+                text: TextSpan(
+                  style: const TextStyle(
+                    color: Colors.black,
+                  ),
+                  children: [
+                    const TextSpan(
+                      text:
+                          "By continuing, you agree to Mubasset SC's ",
+                    ),
+
+                    TextSpan(
+                      text: "Terms of Use ",
+                      style: const TextStyle(
+                        decoration: TextDecoration.underline,
+                      ),
+                      recognizer: TapGestureRecognizer()
+                        ..onTap = () {},
+                    ),
+
+                    const TextSpan(
+                      text: "and ",
+                    ),
+
+                    TextSpan(
+                      text: "Privacy Policy.",
+                      style: const TextStyle(
+                        decoration: TextDecoration.underline,
+                      ),
+                      recognizer: TapGestureRecognizer()
+                        ..onTap = () {},
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 30),
+
+              // --------------------------------------------------
+              // CONTINUE BUTTON
+              // --------------------------------------------------
+
+              buildBottomButton(
+                enabled: isidentifierValid,
+                onPressed: _continue,
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return  Scaffold(
-        backgroundColor: Colors.white,
-        appBar: AppBar(
-          leading:
-           IconButton(onPressed: (){
-      
-           }, icon: Icon(Icons.arrow_back))
-      
-        ),
-        body:
-        SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              children: [
-                /// CONTENT
-                Expanded(
-                  child: _emailWidget(),
-                ),
-          RichText(text: TextSpan(style: TextStyle(color: Colors.black),
-              children: [
-                TextSpan(text:"By continuing, you agree to AL Gharafa SC's "),
-                TextSpan(text: "Terms of Use ",style: TextStyle(decoration: TextDecoration.underline),recognizer: TapGestureRecognizer()..onTap=(){}),
-                TextSpan(text: "and "),
-                TextSpan(text: "Privacy Policy.",style: TextStyle(decoration: TextDecoration.underline),recognizer: TapGestureRecognizer()..onTap=(){})
-      
-              ]
-              )
-              ),
-        SizedBox(height: 30),
-      
-      
-                /// BUTTON (BOTTOM)
-                buildBottomButton(
-                  enabled: isEmailValid,
-                  onPressed: ()async {
+  // --------------------------------------------------
+  // IDENTIFIER WIDGET
+  // --------------------------------------------------
 
-                      setState(() {
-                        isLoading=true;
-                      });
-
-
-                      await Future.delayed(const Duration(seconds: 2));
-                      setState(() {
-                          isLoading=false;
-
-                      });
-                      if(isEmailValid){
-                        if(emailController.text=="ahmed@gmail.com"){
-                          Navigator.push(context, MaterialPageRoute(builder: (_)=>PassLogin(email: emailController.text,)));
-                        }else{
-                          Navigator.push(context, MaterialPageRoute(builder: (_)=>OtpRegisterScreen(email: emailController.text,)));
-                        }
-
-                      }
-
-
-                    }
-      
-                ),
-              ],
-            ),
-          ),
-        ),
-
-    );
-  }
-
-  /// EMAIL STEP
-  Widget _emailWidget() {
+  Widget _identifierWidget() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+
         const SizedBox(height: 15),
+
         const Text(
-          'Please enter your email or phone number',
+          'Please enter your Email Address or phone number',
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.w600,
           ),
         ),
+
         const SizedBox(height: 30),
-        Text("Email address",style: TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
-    ),),
+
+        const Text(
+          'Email address',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+
         const SizedBox(height: 10),
+
         TextField(
-          controller: emailController,
+          controller: identifierController,
+
           keyboardType: TextInputType.emailAddress,
+
           onChanged: (value) {
+            final identifier = value.trim();
+
             setState(() {
-              isEmailValid = emailRegex.hasMatch(value);
+              isidentifierValid =
+                  emailRegex.hasMatch(identifier) ||
+                  phoneRegex.hasMatch(identifier);
             });
           },
+
           decoration: inputDecoration(
             label: '',
-            hint: 'Enter your Email or Phone Number',
+            hint: 'Enter your Email Address or Phone Number',
           ),
         ),
       ],
     );
   }
-
-  /// PASSWORD STEP
-
 }
