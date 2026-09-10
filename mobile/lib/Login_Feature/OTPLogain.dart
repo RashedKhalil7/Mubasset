@@ -112,7 +112,7 @@ class _OtpScreenState extends State<OtpScreen> {
         identifier: widget.email,
         otp: _otpCode,
       );
-
+      
       if (!mounted) return;
 
       Navigator.pushReplacement(

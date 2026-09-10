@@ -6,9 +6,10 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 class ApiService {
   // Android Emulator
   // static const String baseUrl = 'http://10.0.2.2:8000';
-  
+
+  // Linux/Desktop
   static const String baseUrl = 'http://127.0.0.1:8000';
-  
+
   // Physical Android phone:
   // static const String baseUrl = 'http://192.168.1.100:8000';
 
@@ -21,7 +22,6 @@ class ApiService {
 
   static Future<Map<String, dynamic>> checkIdentifier(
       String identifier) async {
-
     final response = await http.post(
       Uri.parse('$baseUrl/api/auth/check-identifier/'),
       headers: {
@@ -39,7 +39,9 @@ class ApiService {
     }
 
     throw Exception(
-      data['detail'] ?? data['identifier'] ?? 'Request failed',
+      data['detail'] ??
+          data['identifier'] ??
+          'Request failed',
     );
   }
 
@@ -51,7 +53,6 @@ class ApiService {
     required String identifier,
     required String purpose,
   }) async {
-
     final response = await http.post(
       Uri.parse('$baseUrl/api/auth/send-otp/'),
       headers: {
@@ -71,8 +72,8 @@ class ApiService {
 
     throw Exception(
       data['detail'] ??
-      data['identifier'] ??
-      'Failed to send OTP',
+          data['identifier'] ??
+          'Failed to send OTP',
     );
   }
 
@@ -85,7 +86,6 @@ class ApiService {
     required String otp,
     required String purpose,
   }) async {
-
     final response = await http.post(
       Uri.parse('$baseUrl/api/auth/verify-otp/'),
       headers: {
@@ -106,16 +106,18 @@ class ApiService {
 
     throw Exception(
       data['detail'] ??
-      data['identifier'] ??
-      'OTP verification failed',
+          data['identifier'] ??
+          'OTP verification failed',
     );
   }
 
   // --------------------------------------------------
-// LOGIN WITH OTP
-// --------------------------------------------------
+  // LOGIN WITH OTP
+  // --------------------------------------------------
 
-static Future<Map<String, dynamic>> loginWithOtp({required String identifier,required String otp,
+  static Future<Map<String, dynamic>> loginWithOtp({
+    required String identifier,
+    required String otp,
   }) async {
     final data = await verifyOtp(
       identifier: identifier,
@@ -123,23 +125,10 @@ static Future<Map<String, dynamic>> loginWithOtp({required String identifier,req
       purpose: 'login',
     );
 
-    if (data['access'] != null) {
-      await storage.write(
-        key: 'access_token',
-        value: data['access'],
-      );
-    }
-
-    if (data['refresh'] != null) {
-      await storage.write(
-        key: 'refresh_token',
-        value: data['refresh'],
-      );
-    }
+    await _saveTokens(data);
 
     return data;
   }
-
 
   // --------------------------------------------------
   // PASSWORD LOGIN
@@ -149,7 +138,6 @@ static Future<Map<String, dynamic>> loginWithOtp({required String identifier,req
     required String identifier,
     required String password,
   }) async {
-
     final response = await http.post(
       Uri.parse('$baseUrl/api/auth/login/'),
       headers: {
@@ -164,17 +152,7 @@ static Future<Map<String, dynamic>> loginWithOtp({required String identifier,req
     final data = jsonDecode(response.body);
 
     if (response.statusCode == 200) {
-
-      await storage.write(
-        key: 'access_token',
-        value: data['access'],
-      );
-
-      await storage.write(
-        key: 'refresh_token',
-        value: data['refresh'],
-      );
-
+      await _saveTokens(data);
       return data;
     }
 
@@ -199,7 +177,6 @@ static Future<Map<String, dynamic>> loginWithOtp({required String identifier,req
     String? phoneNumber,
     String? avatarPath,
   }) async {
-
     final request = http.MultipartRequest(
       'POST',
       Uri.parse('$baseUrl/api/auth/register/'),
@@ -253,24 +230,158 @@ static Future<Map<String, dynamic>> loginWithOtp({required String identifier,req
     final data = jsonDecode(response.body);
 
     if (response.statusCode == 201) {
-
-      await storage.write(
-        key: 'access_token',
-        value: data['access'],
-      );
-
-      await storage.write(
-        key: 'refresh_token',
-        value: data['refresh'],
-      );
-
+      await _saveTokens(data);
       return data;
     }
 
     throw Exception(
       data['detail'] ??
-      data.toString(),
+          data.toString(),
     );
+  }
+
+  // --------------------------------------------------
+  // SAVE TOKENS
+  // --------------------------------------------------
+
+  static Future<void> _saveTokens(
+      Map<String, dynamic> data) async {
+    if (data['access'] != null) {
+      await storage.write(
+        key: 'access_token',
+        value: data['access'].toString(),
+      );
+    }
+
+    if (data['refresh'] != null) {
+      await storage.write(
+        key: 'refresh_token',
+        value: data['refresh'].toString(),
+      );
+    }
+  }
+
+  // --------------------------------------------------
+  // GET ACCESS TOKEN
+  // --------------------------------------------------
+
+  static Future<String?> getAccessToken() async {
+    return await storage.read(
+      key: 'access_token',
+    );
+  }
+
+  // --------------------------------------------------
+  // GET REFRESH TOKEN
+  // --------------------------------------------------
+
+  static Future<String?> getRefreshToken() async {
+    return await storage.read(
+      key: 'refresh_token',
+    );
+  }
+
+  // --------------------------------------------------
+  // REFRESH ACCESS TOKEN
+  // --------------------------------------------------
+
+  static Future<bool> refreshAccessToken() async {
+    final refreshToken =
+        await getRefreshToken();
+
+    if (refreshToken == null ||
+        refreshToken.isEmpty) {
+      return false;
+    }
+
+    try {
+      final response = await http.post(
+        Uri.parse(
+          '$baseUrl/api/auth/token/refresh/',
+        ),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'refresh': refreshToken,
+        }),
+      );
+
+      if (response.statusCode != 200) {
+        // Refresh token is no longer valid.
+        await logout();
+        return false;
+      }
+
+      final data = jsonDecode(response.body);
+
+      if (data['access'] == null) {
+        await logout();
+        return false;
+      }
+
+      await storage.write(
+        key: 'access_token',
+        value: data['access'].toString(),
+      );
+
+      // This supports token rotation if you enable it
+      // later in Django.
+      if (data['refresh'] != null) {
+        await storage.write(
+          key: 'refresh_token',
+          value: data['refresh'].toString(),
+        );
+      }
+
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // --------------------------------------------------
+  // RESTORE SESSION
+  // --------------------------------------------------
+
+  static Future<bool> restoreSession() async {
+    final accessToken =
+        await getAccessToken();
+
+    final refreshToken =
+        await getRefreshToken();
+
+    // No tokens -> user is logged out.
+    if ((accessToken == null ||
+            accessToken.isEmpty) &&
+        (refreshToken == null ||
+            refreshToken.isEmpty)) {
+      return false;
+    }
+
+    // First try the existing access token.
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/auth/me/'),
+        headers: {
+          'Authorization':
+              'Bearer $accessToken',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return true;
+      }
+
+      // Access token expired.
+      if (response.statusCode == 401) {
+        return await refreshAccessToken();
+      }
+
+      return false;
+    } catch (e) {
+      return false;
+    }
   }
 
   // --------------------------------------------------
@@ -278,16 +389,44 @@ static Future<Map<String, dynamic>> loginWithOtp({required String identifier,req
   // --------------------------------------------------
 
   static Future<Map<String, dynamic>> getMe() async {
+    String? token =
+        await getAccessToken();
 
-    final token =
-        await storage.read(key: 'access_token');
+    if (token == null ||
+        token.isEmpty) {
+      throw Exception(
+        'User is not authenticated',
+      );
+    }
 
-    final response = await http.get(
+    var response = await http.get(
       Uri.parse('$baseUrl/api/auth/me/'),
       headers: {
         'Authorization': 'Bearer $token',
       },
     );
+
+    // Access token expired.
+    if (response.statusCode == 401) {
+      final refreshed =
+          await refreshAccessToken();
+
+      if (!refreshed) {
+        throw Exception(
+          'Session expired. Please login again.',
+        );
+      }
+
+      token = await getAccessToken();
+
+      // Retry request with new access token.
+      response = await http.get(
+        Uri.parse('$baseUrl/api/auth/me/'),
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+    }
 
     final data = jsonDecode(response.body);
 
@@ -296,8 +435,26 @@ static Future<Map<String, dynamic>> loginWithOtp({required String identifier,req
     }
 
     throw Exception(
-      data['detail'] ?? 'Failed to get user',
+      data['detail'] ??
+          'Failed to get user',
     );
+  }
+
+  // --------------------------------------------------
+  // IS LOGGED IN
+  // --------------------------------------------------
+
+  static Future<bool> isLoggedIn() async {
+    final accessToken =
+        await getAccessToken();
+
+    final refreshToken =
+        await getRefreshToken();
+
+    return (accessToken != null &&
+            accessToken.isNotEmpty) ||
+        (refreshToken != null &&
+            refreshToken.isNotEmpty);
   }
 
   // --------------------------------------------------
@@ -305,7 +462,6 @@ static Future<Map<String, dynamic>> loginWithOtp({required String identifier,req
   // --------------------------------------------------
 
   static Future<void> logout() async {
-
     await storage.delete(
       key: 'access_token',
     );
@@ -315,3 +471,5 @@ static Future<Map<String, dynamic>> loginWithOtp({required String identifier,req
     );
   }
 }
+
+
