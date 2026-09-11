@@ -71,18 +71,24 @@ def _purpose_text(purpose: str) -> str:
     }.get(purpose, "continue")
 
 
+
 def send_otp_email(otp: OTP):
+
     send_mail(
-        subject="Your Al Gharafa SC verification code",
+        subject="Mubasset - Your verification code",
+
         message=(
-            f"Your verification code is {otp.code}.\n\n"
+            f"Your Mubasset verification code is {otp.code}.\n\n"
             f"Use it to {_purpose_text(otp.purpose)}. It expires in "
             f"{getattr(settings, 'OTP_EXPIRY_MINUTES', 5)} minutes."
         ),
+
         from_email=settings.DEFAULT_FROM_EMAIL,
         recipient_list=[otp.identifier],
-        fail_silently=True,
+
+        fail_silently=False,
     )
+
 
 
 def send_otp_sms(otp: OTP):

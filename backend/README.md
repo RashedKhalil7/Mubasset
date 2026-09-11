@@ -1,4 +1,4 @@
-# Al Gharafa SC — Auth Backend (Django + DRF)
+# Mubasset — Auth Backend (Django + DRF)
 
 Backend built to match the Flutter registration/login screens you shared.
 Users can register and log in with **either an email address or a phone
