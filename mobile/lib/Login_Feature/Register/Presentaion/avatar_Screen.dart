@@ -41,7 +41,7 @@ Future<void> go() async {
     final response = await ApiService.register(
       registrationToken: widget.data.registrationToken,
       fullName: widget.data.fullName,
-      dateOfBirth: widget.data.dateOfBirth?.toIso8601String(),
+      dateOfBirth: widget.data.dateOfBirth?.toIso8601String().split('T').first,
       password: widget.data.password,
       confirmPassword: widget.data.confirmPassword,
       acceptedTerms: widget.data.acceptedTerms,
