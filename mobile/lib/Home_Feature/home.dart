@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:http/http.dart' as http;
 
+import '../screens/menu_screen.dart';
+import '../screens/options_screen.dart';
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -284,13 +287,17 @@ class _HomeScreenState extends State<HomeScreen> {
         centerTitle: true,
 
         leading: IconButton(
-          onPressed: () {},
+          onPressed: () {
+            Navigator.push(context,MaterialPageRoute(builder:(context)=>MenuScreen()));
+          },
           icon: const Icon(Icons.menu, color: Colors.black, size: 32),
         ),
 
         actions: [
           IconButton(
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(context,MaterialPageRoute(builder:(context)=>OptionsScreen()));
+            },
             icon: const Icon(Icons.more_horiz, color: Colors.black, size: 28),
           ),
         ],

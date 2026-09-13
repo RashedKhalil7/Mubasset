@@ -76,7 +76,6 @@ def send_otp_email(otp: OTP):
 
     send_mail(
         subject="Mubasset - Your verification code",
-
         message=(
             f"Your Mubasset verification code is {otp.code}.\n\n"
             f"Use it to {_purpose_text(otp.purpose)}. It expires in "

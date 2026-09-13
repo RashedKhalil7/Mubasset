@@ -462,13 +462,32 @@ class ApiService {
   // --------------------------------------------------
 
   static Future<void> logout() async {
-    await storage.delete(
-      key: 'access_token',
-    );
+    final accessToken = await storage.read(key: 'access_token');
+    final refreshToken = await storage.read(key: 'refresh_token');
 
-    await storage.delete(
-      key: 'refresh_token',
-    );
+    try {
+      if (accessToken != null && refreshToken != null) {
+        final response = await http.post(
+          Uri.parse('$baseUrl/api/auth/logout/'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $accessToken',
+          },
+          body: jsonEncode({
+            'refresh': refreshToken,
+          }),
+        );
+
+        print('Logout status: ${response.statusCode}');
+        print('Logout response: ${response.body}');
+      }
+    } catch (e) {
+      print('Logout error: $e');
+    } finally {
+      // Always remove tokens from the device.
+      await storage.delete(key: 'access_token');
+      await storage.delete(key: 'refresh_token');
+    }
   }
 }
 
