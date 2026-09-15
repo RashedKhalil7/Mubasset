@@ -11,7 +11,9 @@ class ApiService {
     defaultValue: 'http://127.0.0.1:8000',
   );
 
-  static const FlutterSecureStorage storage = FlutterSecureStorage();
+  static const FlutterSecureStorage storage = FlutterSecureStorage(
+    mOptions: MacOsOptions(usesDataProtectionKeychain: false),
+  );
 
   // --------------------------------------------------
   // CHECK EMAIL / PHONE
