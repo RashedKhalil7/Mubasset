@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     "corsheaders",
     # local
     "accounts",
+    "curriculum",
 ]
 
 MIDDLEWARE = [
@@ -212,6 +213,12 @@ DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@algharafasc.c
 # In DEBUG, also return the OTP code in the API response so you can test
 # the Flutter app without reading server logs / real emails.
 OTP_DEBUG_ECHO = DEBUG
+
+# Keep the provider credential on the server. Never ship this value in the
+# Flutter binary; set it in backend/.env in development and in deployment
+# secrets in production.
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.6-flash")
 
 # ---------------------------------------------------------------------------
 # Logging — makes accounts.utils.send_otp_sms's "[SMS OTP] ..." line show up

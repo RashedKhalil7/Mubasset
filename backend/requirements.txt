@@ -4,6 +4,7 @@ djangorestframework-simplejwt>=5.3
 django-cors-headers>=4.4
 Pillow>=10.0
 python-dotenv>=1.0
+pypdf>=5.0
 
 # Only needed if you set DB_ENGINE=mysql (see README "Using MySQL").
 # Requires MySQL/MariaDB client dev headers to build - see README for the

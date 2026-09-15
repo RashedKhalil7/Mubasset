@@ -1,9 +1,7 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:http/http.dart' as http;
 
+import '../services/api_service.dart';
 import '../screens/menu_screen.dart';
 import '../screens/options_screen.dart';
 
@@ -15,14 +13,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // =====================================================
-  // GEMINI CONFIGURATION
-  // =====================================================
-
-  static const String _apiKey = String.fromEnvironment('GEMINI_API_KEY');
-
-  static const String _model = 'gemini-3.6-flash';
-
   // =====================================================
   // CONTROLLERS
   // =====================================================
@@ -43,7 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // Messages displayed in the Flutter UI.
   final List<_ChatMessage> _messages = [
     _ChatMessage(
-      text: 'Hello! I am Mubasset. How can I help you?',
+      text: 'مرحباً! أنا مساعدك التعليمي. اسألني عن أي درس أو تمرين.',
       isUser: false,
       time: 'Now',
     ),
@@ -63,20 +53,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _sendMessage() async {
     final text = _messageController.text.trim();
 
-    debugPrint('API key exists: ${_apiKey.isNotEmpty}');
-    debugPrint('API key length: ${_apiKey.length}');
-
     // Don't send an empty message.
     if (text.isEmpty || _isLoading) {
-      return;
-    }
-
-    // Check that an API key was supplied.
-    if (_apiKey.isEmpty) {
-      _showError(
-        'Gemini API key is missing.\n'
-        'Run the app with --dart-define=GEMINI_API_KEY=YOUR_KEY',
-      );
       return;
     }
 
@@ -96,79 +74,14 @@ class _HomeScreenState extends State<HomeScreen> {
     _scrollToBottom();
 
     try {
-      // Add the user's message to Gemini's conversation history.
-      _conversationHistory.add({
-        'role': 'user',
-        'parts': [
-          {'text': text},
-        ],
-      });
+      _conversationHistory.add({'role': 'user', 'text': text});
 
-      // Gemini API endpoint.
-      final url = Uri.parse(
-        'https://generativelanguage.googleapis.com/v1beta/'
-        'models/$_model:generateContent',
+      final data = await ApiService.chat(
+        message: text,
+        history: _conversationHistory,
       );
-
-      final response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': _apiKey,
-        },
-        body: jsonEncode({
-          'systemInstruction': {
-            'parts': [
-              {
-                'text':
-                    'You are Mubasset, a helpful AI learning assistant. '
-                    'Give clear, accurate and friendly answers. '
-                    'When explaining difficult concepts, use simple examples. '
-                    'You can communicate in Arabic or English depending on '
-                    'the language used by the user.',
-              },
-            ],
-          },
-          'generationConfig': {'maxOutputTokens': 2048},
-          'contents': _conversationHistory,
-        }),
-      );
-
-      // Check HTTP status.
-      if (response.statusCode != 200) {
-        debugPrint('Gemini status code: ${response.statusCode}');
-        debugPrint('Gemini response: ${response.body}');
-
-        throw Exception('Gemini API error: ${response.statusCode}');
-      }
-
-      final data = jsonDecode(response.body);
-
-      final finishReason = data['candidates']?[0]?['finishReason'];
-
-      debugPrint('Gemini finish reason: $finishReason');
-
-      // Extract Gemini's response.
-      final parts = data['candidates']?[0]?['content']?['parts'] as List?;
-
-      final botText = parts
-          ?.where((part) => part['text'] != null)
-          .map((part) => part['text'].toString())
-          .join('\n');
-
-      if (botText == null || botText.toString().trim().isEmpty) {
-        throw Exception('Gemini returned an empty response.');
-      }
-
-      final answer = botText.toString().trim();
-
-      // Add Gemini's answer to conversation history.
-      _conversationHistory.add({
-        'role': 'model',
-        'parts': [
-          {'text': answer},
-        ],
-      });
+      final answer = data['answer'].toString().trim();
+      _conversationHistory.add({'role': 'model', 'text': answer});
 
       // Add Gemini's answer to the UI.
       if (!mounted) return;
@@ -197,15 +110,15 @@ class _HomeScreenState extends State<HomeScreen> {
         _messages.add(
           _ChatMessage(
             text:
-                'Sorry, I could not connect to the AI model.\n\n'
-                'Please check your internet connection and API key.',
+                'تعذّر الاتصال بالمساعد التعليمي. '
+                'تأكد من تسجيل الدخول واتصال الإنترنت ثم حاول مرة أخرى.',
             isUser: false,
             time: _currentTime(),
           ),
         );
       });
 
-      debugPrint('Chatbot error: $e');
+      debugPrint('Curriculum tutor error: $e');
 
       _scrollToBottom();
     }
@@ -250,15 +163,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // =====================================================
-  // ERROR MESSAGE
-  // =====================================================
-
-  void _showError(String message) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
-  }
-
-  // =====================================================
   // BUILD
   // =====================================================
 
@@ -288,7 +192,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
         leading: IconButton(
           onPressed: () {
-            Navigator.push(context,MaterialPageRoute(builder:(context)=>MenuScreen()));
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => MenuScreen()),
+            );
           },
           icon: const Icon(Icons.menu, color: Colors.black, size: 32),
         ),
@@ -296,7 +203,10 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: [
           IconButton(
             onPressed: () {
-              Navigator.push(context,MaterialPageRoute(builder:(context)=>OptionsScreen()));
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => OptionsScreen()),
+              );
             },
             icon: const Icon(Icons.more_horiz, color: Colors.black, size: 28),
           ),
@@ -489,7 +399,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
 
                         decoration: const InputDecoration(
-                          hintText: 'Message Mubasset chatbot...',
+                          hintText: 'اكتب سؤالك عن الدرس أو التمرين...',
                           hintStyle: TextStyle(
                             color: Color(0xFF8995B5),
                             fontSize: 14,

@@ -267,3 +267,38 @@ Verified locally with `curl` against a running server:
   `DJANGO_SECRET_KEY`, set `DEBUG=False` (which also turns off
   `debugOtp`), restrict `DJANGO_ALLOWED_HOSTS` and `DJANGO_CORS_ALLOW_ALL`,
   and serve media (avatars) from S3/GCS rather than local disk.
+# Curriculum-grounded Arabic tutor
+
+The curriculum API keeps Sudanese third-year secondary books on the server and
+uses their extracted text as grounding context for every answer.
+
+1. Install dependencies: `pip install -r requirements.txt`.
+2. Copy `backend/.env.example` to `backend/.env`, then replace the
+   placeholder with your key. The resulting file is
+   `/Users/awabs/FlutterProjects/Mubasset/backend/.env`:
+
+   ```env
+   GEMINI_API_KEY=your_actual_gemini_key
+   GEMINI_MODEL=gemini-3.6-flash
+   ```
+
+   Do not put the key in Flutter files, `mobile/.env`, `pubspec.yaml`, or
+   source control. The Django settings file loads this exact `backend/.env`
+   file automatically.
+3. Run migrations: `python manage.py migrate`.
+4. Create an admin user: `python manage.py createsuperuser`.
+5. Upload a PDF, TXT, or Markdown book with an authenticated admin request:
+
+   `POST /api/curriculum/upload/` as multipart fields `file`, `title`,
+   `subject`, and `grade`.
+
+   For local files, the equivalent command is:
+   `python manage.py ingest_curriculum path/to/book.pdf --title "..." --subject "الفيزياء"`.
+
+6. Authenticated students ask questions at `POST /api/curriculum/chat/`:
+
+   `{"message": "اشرح قانون نيوتن الثاني", "history": []}`
+
+PDF pages are split into searchable Arabic/English chunks. Retrieval is
+deliberately dependency-light for the first version; a vector index can be
+added later when the book collection and usage patterns are known.
