@@ -4,32 +4,24 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class ApiService {
-  // Android Emulator
-  // static const String baseUrl = 'http://10.0.2.2:8000';
+  // Override for a device or emulator with:
+  // flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000
+  static const String baseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'http://127.0.0.1:8000',
+  );
 
-  // Linux/Desktop
-  static const String baseUrl = 'http://127.0.0.1:8000';
-
-  // Physical Android phone:
-  // static const String baseUrl = 'http://192.168.1.100:8000';
-
-  static const FlutterSecureStorage storage =
-      FlutterSecureStorage();
+  static const FlutterSecureStorage storage = FlutterSecureStorage();
 
   // --------------------------------------------------
   // CHECK EMAIL / PHONE
   // --------------------------------------------------
 
-  static Future<Map<String, dynamic>> checkIdentifier(
-      String identifier) async {
+  static Future<Map<String, dynamic>> checkIdentifier(String identifier) async {
     final response = await http.post(
       Uri.parse('$baseUrl/api/auth/check-identifier/'),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
-        'identifier': identifier,
-      }),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'identifier': identifier}),
     );
 
     final data = jsonDecode(response.body);
@@ -38,11 +30,7 @@ class ApiService {
       return data;
     }
 
-    throw Exception(
-      data['detail'] ??
-          data['identifier'] ??
-          'Request failed',
-    );
+    throw Exception(data['detail'] ?? data['identifier'] ?? 'Request failed');
   }
 
   // --------------------------------------------------
@@ -55,13 +43,8 @@ class ApiService {
   }) async {
     final response = await http.post(
       Uri.parse('$baseUrl/api/auth/send-otp/'),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
-        'identifier': identifier,
-        'purpose': purpose,
-      }),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'identifier': identifier, 'purpose': purpose}),
     );
 
     final data = jsonDecode(response.body);
@@ -71,9 +54,7 @@ class ApiService {
     }
 
     throw Exception(
-      data['detail'] ??
-          data['identifier'] ??
-          'Failed to send OTP',
+      data['detail'] ?? data['identifier'] ?? 'Failed to send OTP',
     );
   }
 
@@ -88,9 +69,7 @@ class ApiService {
   }) async {
     final response = await http.post(
       Uri.parse('$baseUrl/api/auth/verify-otp/'),
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'identifier': identifier,
         'otp': otp,
@@ -105,9 +84,7 @@ class ApiService {
     }
 
     throw Exception(
-      data['detail'] ??
-          data['identifier'] ??
-          'OTP verification failed',
+      data['detail'] ?? data['identifier'] ?? 'OTP verification failed',
     );
   }
 
@@ -140,13 +117,8 @@ class ApiService {
   }) async {
     final response = await http.post(
       Uri.parse('$baseUrl/api/auth/login/'),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
-        'identifier': identifier,
-        'password': password,
-      }),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'identifier': identifier, 'password': password}),
     );
 
     final data = jsonDecode(response.body);
@@ -156,9 +128,7 @@ class ApiService {
       return data;
     }
 
-    throw Exception(
-      data['detail'] ?? 'Login failed',
-    );
+    throw Exception(data['detail'] ?? 'Login failed');
   }
 
   // --------------------------------------------------
@@ -182,28 +152,21 @@ class ApiService {
       Uri.parse('$baseUrl/api/auth/register/'),
     );
 
-    request.fields['registration_token'] =
-        registrationToken;
+    request.fields['registration_token'] = registrationToken;
 
-    request.fields['fullName'] =
-        fullName;
+    request.fields['fullName'] = fullName;
 
     if (dateOfBirth != null) {
-      request.fields['dateOfBirth'] =
-          dateOfBirth;
+      request.fields['dateOfBirth'] = dateOfBirth;
     }
 
-    request.fields['password'] =
-        password;
+    request.fields['password'] = password;
 
-    request.fields['confirmPassword'] =
-        confirmPassword;
+    request.fields['confirmPassword'] = confirmPassword;
 
-    request.fields['acceptedTerms'] =
-        acceptedTerms.toString();
+    request.fields['acceptedTerms'] = acceptedTerms.toString();
 
-    request.fields['acceptedOffers'] =
-        acceptedOffers.toString();
+    request.fields['acceptedOffers'] = acceptedOffers.toString();
 
     if (email != null && email.isNotEmpty) {
       request.fields['email'] = email;
@@ -215,17 +178,13 @@ class ApiService {
 
     if (avatarPath != null && avatarPath.isNotEmpty) {
       request.files.add(
-        await http.MultipartFile.fromPath(
-          'avatar',
-          avatarPath,
-        ),
+        await http.MultipartFile.fromPath('avatar', avatarPath),
       );
     }
 
     final streamedResponse = await request.send();
 
-    final response =
-        await http.Response.fromStream(streamedResponse);
+    final response = await http.Response.fromStream(streamedResponse);
 
     final data = jsonDecode(response.body);
 
@@ -234,9 +193,45 @@ class ApiService {
       return data;
     }
 
+    throw Exception(data['detail'] ?? data.toString());
+  }
+
+  // --------------------------------------------------
+  // LEARNING CHAT
+  // --------------------------------------------------
+
+  static Future<Map<String, dynamic>> chat({required String message}) async {
+    var token = await getAccessToken();
+
+    Future<http.Response> send(String? accessToken) {
+      final headers = <String, String>{'Content-Type': 'application/json'};
+      if (accessToken != null && accessToken.isNotEmpty) {
+        headers['Authorization'] = 'Bearer $accessToken';
+      }
+      return http.post(
+        Uri.parse('$baseUrl/api/learning/chat/'),
+        headers: headers,
+        body: jsonEncode({'message': message}),
+      );
+    }
+
+    var response = await send(token);
+    if (response.statusCode == 401 &&
+        token != null &&
+        token.isNotEmpty &&
+        await refreshAccessToken()) {
+      token = await getAccessToken();
+      if (token != null && token.isNotEmpty) {
+        response = await send(token);
+      }
+    }
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    if (response.statusCode == 200) {
+      return data;
+    }
     throw Exception(
-      data['detail'] ??
-          data.toString(),
+      data['message'] ?? data['detail'] ?? 'تعذر الاتصال بالمساعد.',
     );
   }
 
@@ -244,8 +239,7 @@ class ApiService {
   // SAVE TOKENS
   // --------------------------------------------------
 
-  static Future<void> _saveTokens(
-      Map<String, dynamic> data) async {
+  static Future<void> _saveTokens(Map<String, dynamic> data) async {
     if (data['access'] != null) {
       await storage.write(
         key: 'access_token',
@@ -266,9 +260,7 @@ class ApiService {
   // --------------------------------------------------
 
   static Future<String?> getAccessToken() async {
-    return await storage.read(
-      key: 'access_token',
-    );
+    return await storage.read(key: 'access_token');
   }
 
   // --------------------------------------------------
@@ -276,9 +268,7 @@ class ApiService {
   // --------------------------------------------------
 
   static Future<String?> getRefreshToken() async {
-    return await storage.read(
-      key: 'refresh_token',
-    );
+    return await storage.read(key: 'refresh_token');
   }
 
   // --------------------------------------------------
@@ -286,25 +276,17 @@ class ApiService {
   // --------------------------------------------------
 
   static Future<bool> refreshAccessToken() async {
-    final refreshToken =
-        await getRefreshToken();
+    final refreshToken = await getRefreshToken();
 
-    if (refreshToken == null ||
-        refreshToken.isEmpty) {
+    if (refreshToken == null || refreshToken.isEmpty) {
       return false;
     }
 
     try {
       final response = await http.post(
-        Uri.parse(
-          '$baseUrl/api/auth/token/refresh/',
-        ),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'refresh': refreshToken,
-        }),
+        Uri.parse('$baseUrl/api/auth/token/refresh/'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'refresh': refreshToken}),
       );
 
       if (response.statusCode != 200) {
@@ -345,17 +327,13 @@ class ApiService {
   // --------------------------------------------------
 
   static Future<bool> restoreSession() async {
-    final accessToken =
-        await getAccessToken();
+    final accessToken = await getAccessToken();
 
-    final refreshToken =
-        await getRefreshToken();
+    final refreshToken = await getRefreshToken();
 
     // No tokens -> user is logged out.
-    if ((accessToken == null ||
-            accessToken.isEmpty) &&
-        (refreshToken == null ||
-            refreshToken.isEmpty)) {
+    if ((accessToken == null || accessToken.isEmpty) &&
+        (refreshToken == null || refreshToken.isEmpty)) {
       return false;
     }
 
@@ -363,10 +341,7 @@ class ApiService {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/api/auth/me/'),
-        headers: {
-          'Authorization':
-              'Bearer $accessToken',
-        },
+        headers: {'Authorization': 'Bearer $accessToken'},
       );
 
       if (response.statusCode == 200) {
@@ -389,32 +364,23 @@ class ApiService {
   // --------------------------------------------------
 
   static Future<Map<String, dynamic>> getMe() async {
-    String? token =
-        await getAccessToken();
+    String? token = await getAccessToken();
 
-    if (token == null ||
-        token.isEmpty) {
-      throw Exception(
-        'User is not authenticated',
-      );
+    if (token == null || token.isEmpty) {
+      throw Exception('User is not authenticated');
     }
 
     var response = await http.get(
       Uri.parse('$baseUrl/api/auth/me/'),
-      headers: {
-        'Authorization': 'Bearer $token',
-      },
+      headers: {'Authorization': 'Bearer $token'},
     );
 
     // Access token expired.
     if (response.statusCode == 401) {
-      final refreshed =
-          await refreshAccessToken();
+      final refreshed = await refreshAccessToken();
 
       if (!refreshed) {
-        throw Exception(
-          'Session expired. Please login again.',
-        );
+        throw Exception('Session expired. Please login again.');
       }
 
       token = await getAccessToken();
@@ -422,9 +388,7 @@ class ApiService {
       // Retry request with new access token.
       response = await http.get(
         Uri.parse('$baseUrl/api/auth/me/'),
-        headers: {
-          'Authorization': 'Bearer $token',
-        },
+        headers: {'Authorization': 'Bearer $token'},
       );
     }
 
@@ -434,10 +398,7 @@ class ApiService {
       return data;
     }
 
-    throw Exception(
-      data['detail'] ??
-          'Failed to get user',
-    );
+    throw Exception(data['detail'] ?? 'Failed to get user');
   }
 
   // --------------------------------------------------
@@ -445,16 +406,12 @@ class ApiService {
   // --------------------------------------------------
 
   static Future<bool> isLoggedIn() async {
-    final accessToken =
-        await getAccessToken();
+    final accessToken = await getAccessToken();
 
-    final refreshToken =
-        await getRefreshToken();
+    final refreshToken = await getRefreshToken();
 
-    return (accessToken != null &&
-            accessToken.isNotEmpty) ||
-        (refreshToken != null &&
-            refreshToken.isNotEmpty);
+    return (accessToken != null && accessToken.isNotEmpty) ||
+        (refreshToken != null && refreshToken.isNotEmpty);
   }
 
   // --------------------------------------------------
@@ -473,9 +430,7 @@ class ApiService {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer $accessToken',
           },
-          body: jsonEncode({
-            'refresh': refreshToken,
-          }),
+          body: jsonEncode({'refresh': refreshToken}),
         );
 
         print('Logout status: ${response.statusCode}');
@@ -490,5 +445,3 @@ class ApiService {
     }
   }
 }
-
-

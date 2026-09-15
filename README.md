@@ -2,7 +2,7 @@
 
 **Mubasset** is an AI-powered learning assistant designed to help students learn, ask questions, practice concepts, and interact with educational content through a simple and accessible application.
 
-The project is built using **Flutter** for the application and **Django + Django REST Framework** for the backend. The current AI chatbot is implemented directly in Flutter and communicates with the **Google Gemini API**.
+The project is built using **Flutter** for the application and **Django + Django REST Framework** for the backend. The AI chatbot uses a backend retrieval-augmented generation (RAG) gateway backed by the **Google Gemini API**.
 
 > **Project status:** Active development
 
@@ -94,7 +94,7 @@ The Django backend is responsible for:
 
 ### Google Gemini
 
-The current AI chatbot communicates **directly from Flutter** with the Google Gemini API.
+The Flutter app communicates with the Django learning API; Django retrieves relevant textbook chunks and communicates with Google Gemini. The Gemini key never ships in the mobile app.
 
 The current implementation is located in the Flutter chat screen and handles:
 
@@ -221,7 +221,7 @@ mobile/lib/services/api_service.dart
 
 # 🧠 Current AI Architecture
 
-At the current stage of development, AI requests are made directly from Flutter:
+AI requests now go through the authenticated Django learning API:
 
 ```text
 Flutter
@@ -390,27 +390,19 @@ flutter run -d linux
 
 # 🤖 Running the AI Chatbot
 
-The current Flutter chatbot receives the Gemini API key through a Dart environment variable.
+The backend reads `GEMINI_API_KEY` from its environment. The Flutter app only sends an authenticated chat request.
 
-Run the application using:
+Run the application normally:
 
 ```bash
-flutter run --dart-define=GEMINI_API_KEY=YOUR_API_KEY
+flutter run
 ```
-
-Replace:
-
-```text
-YOUR_API_KEY
-```
-
-with your Gemini API key.
 
 ### ⚠️ Important
 
 Never commit your real Gemini API key to GitHub.
 
-The current direct Flutter integration is suitable for development and testing. Before a production release, the AI request should preferably be moved behind the Django backend.
+Book ingestion and the Gemini request are handled by Django, which keeps provider credentials private and gives the assistant Sudanese curriculum context.
 
 ---
 
@@ -595,7 +587,7 @@ Flutter Chat UI
 * [x] JWT authentication
 * [ ] Persistent chat API
 * [ ] AI service layer
-* [ ] RAG system
+* [x] RAG system for third-year Sudanese textbooks
 * [ ] OCR service
 * [ ] Computer vision services
 * [ ] Quiz generator
@@ -681,3 +673,60 @@ The project license will be added before the public release.
 ## Mubasset
 
 **An AI-powered learning assistant built to make learning simpler, smarter, and more accessible.**
+# Mubasset
+
+## Sudanese third-year learning assistant
+
+The chatbot now uses the Django backend as a secure retrieval-augmented
+generation (RAG) gateway. Gemini credentials stay on the server, Arabic
+normalization improves matching, and answers are grounded in imported
+third-year Sudanese curriculum books when relevant.
+
+### Configure the backend
+
+Install the backend dependencies, run migrations, and set the Gemini key in
+`backend/.env` (never put this key in Flutter or commit it):
+
+```bash
+cd backend
+pip install -r requirements.txt
+python manage.py migrate
+GEMINI_API_KEY=your-key
+GEMINI_MODEL=gemini-2.5-flash
+```
+
+`/api/learning/chat/` supports guest users. Guest questions can use the imported
+textbooks, but guest conversations are not saved. Signed-in users additionally
+get conversation context from their recent messages. Set `GEMINI_API_KEY` in the
+environment used by Django rather than passing it with `--dart-define`.
+
+The Flutter API address defaults to `http://127.0.0.1:8000`. For an Android
+emulator, run Flutter with:
+
+```bash
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000
+```
+
+For a physical phone, use the computer's LAN address instead:
+
+```bash
+flutter run --dart-define=API_BASE_URL=http://192.168.1.100:8000
+```
+
+### Import books
+
+Put downloaded, legally obtained PDF textbooks in a directory outside Git,
+then import one subject at a time:
+
+```bash
+python manage.py ingest_books /path/to/physics --subject "الفيزياء"
+python manage.py ingest_books /path/to/mathematics --subject "الرياضيات"
+```
+
+The command extracts text page by page, stores searchable chunks and keeps the
+page number. Scanned/image-only PDFs need OCR before import; otherwise there is
+no text for retrieval. Re-running a file replaces its previous chunks.
+
+The assistant is intentionally instructed to say when the books do not contain
+enough information instead of presenting an invented answer. Book licensing
+and the accuracy of extracted text should be checked before deployment.

@@ -1,11 +1,9 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:http/http.dart' as http;
 
 import '../screens/menu_screen.dart';
 import '../screens/options_screen.dart';
+import '../services/api_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,14 +13,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // =====================================================
-  // GEMINI CONFIGURATION
-  // =====================================================
-
-  static const String _apiKey = String.fromEnvironment('GEMINI_API_KEY');
-
-  static const String _model = 'gemini-3.6-flash';
-
   // =====================================================
   // CONTROLLERS
   // =====================================================
@@ -37,13 +27,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   bool _isLoading = false;
 
-  // Conversation history sent to Gemini.
-  final List<Map<String, dynamic>> _conversationHistory = [];
-
   // Messages displayed in the Flutter UI.
   final List<_ChatMessage> _messages = [
     _ChatMessage(
-      text: 'Hello! I am Mubasset. How can I help you?',
+      text:
+          'مرحبًا! أنا مبسط مساعدك التعليمي الشخصي. كيف يمكنني مساعدتك اليوم؟',
       isUser: false,
       time: 'Now',
     ),
@@ -63,20 +51,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _sendMessage() async {
     final text = _messageController.text.trim();
 
-    debugPrint('API key exists: ${_apiKey.isNotEmpty}');
-    debugPrint('API key length: ${_apiKey.length}');
-
     // Don't send an empty message.
     if (text.isEmpty || _isLoading) {
-      return;
-    }
-
-    // Check that an API key was supplied.
-    if (_apiKey.isEmpty) {
-      _showError(
-        'Gemini API key is missing.\n'
-        'Run the app with --dart-define=GEMINI_API_KEY=YOUR_KEY',
-      );
       return;
     }
 
@@ -96,79 +72,11 @@ class _HomeScreenState extends State<HomeScreen> {
     _scrollToBottom();
 
     try {
-      // Add the user's message to Gemini's conversation history.
-      _conversationHistory.add({
-        'role': 'user',
-        'parts': [
-          {'text': text},
-        ],
-      });
-
-      // Gemini API endpoint.
-      final url = Uri.parse(
-        'https://generativelanguage.googleapis.com/v1beta/'
-        'models/$_model:generateContent',
-      );
-
-      final response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': _apiKey,
-        },
-        body: jsonEncode({
-          'systemInstruction': {
-            'parts': [
-              {
-                'text':
-                    'You are Mubasset, a helpful AI learning assistant. '
-                    'Give clear, accurate and friendly answers. '
-                    'When explaining difficult concepts, use simple examples. '
-                    'You can communicate in Arabic or English depending on '
-                    'the language used by the user.',
-              },
-            ],
-          },
-          'generationConfig': {'maxOutputTokens': 2048},
-          'contents': _conversationHistory,
-        }),
-      );
-
-      // Check HTTP status.
-      if (response.statusCode != 200) {
-        debugPrint('Gemini status code: ${response.statusCode}');
-        debugPrint('Gemini response: ${response.body}');
-
-        throw Exception('Gemini API error: ${response.statusCode}');
+      final data = await ApiService.chat(message: text);
+      final answer = (data['answer'] as String?)?.trim();
+      if (answer == null || answer.isEmpty) {
+        throw Exception('The assistant returned an empty response.');
       }
-
-      final data = jsonDecode(response.body);
-
-      final finishReason = data['candidates']?[0]?['finishReason'];
-
-      debugPrint('Gemini finish reason: $finishReason');
-
-      // Extract Gemini's response.
-      final parts = data['candidates']?[0]?['content']?['parts'] as List?;
-
-      final botText = parts
-          ?.where((part) => part['text'] != null)
-          .map((part) => part['text'].toString())
-          .join('\n');
-
-      if (botText == null || botText.toString().trim().isEmpty) {
-        throw Exception('Gemini returned an empty response.');
-      }
-
-      final answer = botText.toString().trim();
-
-      // Add Gemini's answer to conversation history.
-      _conversationHistory.add({
-        'role': 'model',
-        'parts': [
-          {'text': answer},
-        ],
-      });
 
       // Add Gemini's answer to the UI.
       if (!mounted) return;
@@ -185,20 +93,13 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (e) {
       if (!mounted) return;
 
-      // Remove the user message from Gemini's history if
-      // the request failed.
-      if (_conversationHistory.isNotEmpty &&
-          _conversationHistory.last['role'] == 'user') {
-        _conversationHistory.removeLast();
-      }
-
       setState(() {
         _isLoading = false;
         _messages.add(
           _ChatMessage(
             text:
-                'Sorry, I could not connect to the AI model.\n\n'
-                'Please check your internet connection and API key.',
+                'تعذر الاتصال بالمساعد الآن.\n\n'
+                '${_readableError(e)}',
             isUser: false,
             time: _currentTime(),
           ),
@@ -209,6 +110,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
       _scrollToBottom();
     }
+  }
+
+  String _readableError(Object error) {
+    final message = error.toString().replaceFirst('Exception: ', '').trim();
+    if (message.contains('SocketException') ||
+        message.contains('Connection refused')) {
+      return 'تأكد من تشغيل الخادم وأن عنوان API مناسب لجهازك.';
+    }
+    return message.isEmpty
+        ? 'تحقق من اتصالك بالإنترنت وحاول مرة أخرى.'
+        : message;
   }
 
   // =====================================================
@@ -250,15 +162,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // =====================================================
-  // ERROR MESSAGE
-  // =====================================================
-
-  void _showError(String message) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
-  }
-
-  // =====================================================
   // BUILD
   // =====================================================
 
@@ -288,7 +191,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
         leading: IconButton(
           onPressed: () {
-            Navigator.push(context,MaterialPageRoute(builder:(context)=>MenuScreen()));
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => MenuScreen()),
+            );
           },
           icon: const Icon(Icons.menu, color: Colors.black, size: 32),
         ),
@@ -296,7 +202,10 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: [
           IconButton(
             onPressed: () {
-              Navigator.push(context,MaterialPageRoute(builder:(context)=>OptionsScreen()));
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => OptionsScreen()),
+              );
             },
             icon: const Icon(Icons.more_horiz, color: Colors.black, size: 28),
           ),
@@ -654,6 +563,12 @@ class _MessageBubble extends StatelessWidget {
           // MESSAGE
           Text(
             text,
+            textDirection: RegExp(r'[\u0600-\u06FF]').hasMatch(text)
+                ? TextDirection.rtl
+                : TextDirection.ltr,
+            textAlign: RegExp(r'[\u0600-\u06FF]').hasMatch(text)
+                ? TextAlign.right
+                : TextAlign.left,
             style: const TextStyle(
               color: Colors.white,
               fontSize: 17,
