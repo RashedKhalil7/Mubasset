@@ -1,5 +1,5 @@
 """
-Django settings for the Gharafa SC auth backend.
+Django settings for the Mubasset auth backend.
 
 This backend is built to match the Flutter registration/login screens:
 - login.dart            -> check-email

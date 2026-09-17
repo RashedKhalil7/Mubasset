@@ -68,7 +68,7 @@ class _OptionsScreenState extends State<OptionsScreen> {
                       label: 'Mute notifications',
                       trailing: CupertinoSwitch(
                         value: _mute,
-                        activeColor: _green,
+                        activeTrackColor: _green,
                         onChanged: (v) => setState(() => _mute = v),
                       ),
                     ),
@@ -78,7 +78,7 @@ class _OptionsScreenState extends State<OptionsScreen> {
                       label: 'Pin chat',
                       trailing: CupertinoSwitch(
                         value: _pin,
-                        activeColor: _green,
+                        activeTrackColor: _green,
                         onChanged: (v) => setState(() => _pin = v),
                       ),
                     ),
@@ -167,7 +167,7 @@ class _OptionsScreenState extends State<OptionsScreen> {
             height: 48,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.08),
+              color: Colors.white.withValues(alpha: 0.08),
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.smart_toy_outlined, color: Colors.white, size: 26),

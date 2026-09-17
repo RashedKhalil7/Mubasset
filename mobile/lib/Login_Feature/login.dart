@@ -212,7 +212,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     const TextSpan(
                       text:
-                          "By continuing, you agree to Mubasset SC's ",
+                          "By continuing, you agree to Mubasset ",
                     ),
 
                     TextSpan(
