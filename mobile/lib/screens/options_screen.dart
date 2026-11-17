@@ -1,5 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 
 import '../Login_Feature/login.dart';
 import '../services/api_service.dart';
@@ -7,7 +11,6 @@ import '../services/api_service.dart';
 /// Standalone "Options" screen (right screen of the Mubasset mockup).
 /// Run on its own with:  flutter run -t lib/options_screen.dart
 /// Or drop `OptionsScreen` into your app and delete `main` / `OptionsApp` below.
-
 
 class OptionsApp extends StatelessWidget {
   const OptionsApp({super.key});
@@ -32,7 +35,9 @@ const _bg = Color(0xFFF5F7F6);
 const _danger = Color(0xFFE5484D);
 
 class OptionsScreen extends StatefulWidget {
-  const OptionsScreen({super.key});
+  const OptionsScreen({super.key, this.messages = const []});
+
+  final List<ChatExportMessage> messages;
 
   @override
   State<OptionsScreen> createState() => _OptionsScreenState();
@@ -41,6 +46,81 @@ class OptionsScreen extends StatefulWidget {
 class _OptionsScreenState extends State<OptionsScreen> {
   bool _mute = true;
   bool _pin = false;
+
+  Future<void> _exportChat() async {
+    final arabicFont = pw.Font.ttf(
+      await rootBundle.load('assets/fonts/NotoNaskhArabic.ttf'),
+    );
+    final pdf = pw.Document(
+      theme: pw.ThemeData.withFont(base: arabicFont, bold: arabicFont),
+    );
+    final messages = widget.messages;
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(36),
+        build: (context) => [
+          pw.Text(
+            'Mubasset chat export',
+            style: pw.TextStyle(
+              fontSize: 20,
+              fontWeight: pw.FontWeight.bold,
+              color: PdfColor.fromHex('#15201A'),
+            ),
+          ),
+          pw.SizedBox(height: 8),
+          pw.Text('Exported ${DateTime.now().toLocal()}'),
+          pw.Divider(),
+          if (messages.isEmpty)
+            pw.Text('No messages in this conversation.')
+          else
+            ...messages.map(
+              (message) => pw.Container(
+                margin: const pw.EdgeInsets.only(bottom: 14),
+                padding: const pw.EdgeInsets.all(10),
+                decoration: pw.BoxDecoration(
+                  color: message.isUser
+                      ? PdfColor.fromHex('#E7F4EC')
+                      : PdfColor.fromHex('#F3F5F4'),
+                  borderRadius: pw.BorderRadius.circular(8),
+                ),
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(
+                      message.isUser ? 'You' : 'Mubasset',
+                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                    ),
+                    pw.SizedBox(height: 4),
+                    pw.Directionality(
+                      textDirection: pw.TextDirection.rtl,
+                      child: pw.Text(message.text),
+                    ),
+                    pw.SizedBox(height: 4),
+                    pw.Text(
+                      message.time,
+                      style: const pw.TextStyle(fontSize: 9),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+
+    try {
+      await Printing.sharePdf(
+        bytes: await pdf.save(),
+        filename: 'mubasset-chat.pdf',
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Could not export chat: $error')));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -89,6 +169,7 @@ class _OptionsScreenState extends State<OptionsScreen> {
                       icon: Icons.download_outlined,
                       label: 'Export chat',
                       trailing: const _Chevron(),
+                      onTap: _exportChat,
                     ),
                     _inset(),
                     _rowTile(
@@ -144,7 +225,11 @@ class _OptionsScreenState extends State<OptionsScreen> {
             child: Text(
               'Options',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: _ink),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: _ink,
+              ),
             ),
           ),
           const SizedBox(width: 44),
@@ -170,7 +255,11 @@ class _OptionsScreenState extends State<OptionsScreen> {
               color: Colors.white.withValues(alpha: 0.08),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.smart_toy_outlined, color: Colors.white, size: 26),
+            child: const Icon(
+              Icons.smart_toy_outlined,
+              color: Colors.white,
+              size: 26,
+            ),
           ),
           const SizedBox(width: 14),
           Column(
@@ -190,10 +279,16 @@ class _OptionsScreenState extends State<OptionsScreen> {
                   Container(
                     width: 8,
                     height: 8,
-                    decoration: const BoxDecoration(color: _green, shape: BoxShape.circle),
+                    decoration: const BoxDecoration(
+                      color: _green,
+                      shape: BoxShape.circle,
+                    ),
                   ),
                   const SizedBox(width: 6),
-                  const Text('Online', style: TextStyle(color: _green, fontSize: 13)),
+                  const Text(
+                    'Online',
+                    style: TextStyle(color: _green, fontSize: 13),
+                  ),
                 ],
               ),
             ],
@@ -215,17 +310,18 @@ class _OptionsScreenState extends State<OptionsScreen> {
   }
 
   Widget _inset() => const Padding(
-        padding: EdgeInsets.only(left: 70),
-        child: Divider(height: 1, thickness: 1, color: _line),
-      );
+    padding: EdgeInsets.only(left: 70),
+    child: Divider(height: 1, thickness: 1, color: _line),
+  );
 
   Widget _rowTile({
     required IconData icon,
     required String label,
     required Widget trailing,
+    VoidCallback? onTap,
   }) {
     return InkWell(
-      onTap: () {},
+      onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
@@ -233,7 +329,10 @@ class _OptionsScreenState extends State<OptionsScreen> {
             Container(
               width: 40,
               height: 40,
-              decoration: const BoxDecoration(color: _mint, shape: BoxShape.circle),
+              decoration: const BoxDecoration(
+                color: _mint,
+                shape: BoxShape.circle,
+              ),
               child: Icon(icon, color: _green, size: 20),
             ),
             const SizedBox(width: 14),
@@ -265,9 +364,7 @@ class _OptionsScreenState extends State<OptionsScreen> {
             builder: (context) {
               return AlertDialog(
                 title: const Text('Log out'),
-                content: const Text(
-                  'Are you sure you want to log out?',
-                ),
+                content: const Text('Are you sure you want to log out?'),
                 actions: [
                   TextButton(
                     onPressed: () {
@@ -296,9 +393,7 @@ class _OptionsScreenState extends State<OptionsScreen> {
             if (!context.mounted) return;
 
             Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(
-                builder: (_) => const LoginScreen(),
-              ),
+              MaterialPageRoute(builder: (_) => const LoginScreen()),
               (route) => false,
             );
           } catch (e) {
@@ -307,10 +402,7 @@ class _OptionsScreenState extends State<OptionsScreen> {
         },
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 18),
-          side: const BorderSide(
-            color: _danger,
-            width: 1.5,
-          ),
+          side: const BorderSide(color: _danger, width: 1.5),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -326,6 +418,18 @@ class _OptionsScreenState extends State<OptionsScreen> {
       ),
     );
   }
+}
+
+class ChatExportMessage {
+  const ChatExportMessage({
+    required this.text,
+    required this.isUser,
+    required this.time,
+  });
+
+  final String text;
+  final bool isUser;
+  final String time;
 }
 
 class _Chevron extends StatelessWidget {
