@@ -204,7 +204,19 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => OptionsScreen()),
+                MaterialPageRoute(
+                  builder: (context) => OptionsScreen(
+                    messages: _messages
+                        .map(
+                          (message) => ChatExportMessage(
+                            text: message.text,
+                            isUser: message.isUser,
+                            time: message.time,
+                          ),
+                        )
+                        .toList(growable: false),
+                  ),
+                ),
               );
             },
             icon: const Icon(Icons.more_horiz, color: Colors.black, size: 28),
