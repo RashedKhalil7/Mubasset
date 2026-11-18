@@ -44,7 +44,6 @@ class OptionsScreen extends StatefulWidget {
 }
 
 class _OptionsScreenState extends State<OptionsScreen> {
-  bool _mute = true;
   bool _pin = false;
 
   Future<void> _exportChat() async {
@@ -144,16 +143,6 @@ class _OptionsScreenState extends State<OptionsScreen> {
                     ),
                     _inset(),
                     _rowTile(
-                      icon: Icons.notifications_none,
-                      label: 'Mute notifications',
-                      trailing: CupertinoSwitch(
-                        value: _mute,
-                        activeTrackColor: _green,
-                        onChanged: (v) => setState(() => _mute = v),
-                      ),
-                    ),
-                    _inset(),
-                    _rowTile(
                       icon: Icons.push_pin_outlined,
                       label: 'Pin chat',
                       trailing: CupertinoSwitch(
@@ -177,21 +166,9 @@ class _OptionsScreenState extends State<OptionsScreen> {
                       label: 'Share chat',
                       trailing: const _Chevron(),
                     ),
-                    _inset(),
-                    _rowTile(
-                      icon: Icons.delete_outline,
-                      label: 'Clear conversation',
-                      trailing: const _Chevron(),
-                    ),
                   ]),
                   const SizedBox(height: 20),
                   _card([
-                    _rowTile(
-                      icon: Icons.help_outline,
-                      label: 'Help & Support',
-                      trailing: const _Chevron(),
-                    ),
-                    _inset(),
                     _rowTile(
                       icon: Icons.info_outline,
                       label: 'About Mubasset',

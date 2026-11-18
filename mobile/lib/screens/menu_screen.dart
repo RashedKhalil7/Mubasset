@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../services/api_service.dart';
@@ -53,6 +54,7 @@ class _MenuScreenState extends State<MenuScreen> {
   String? _avatarUrl;
   bool _isLoadingUser = true;
   bool _showPinnedChats = false;
+  bool _muteNotifications = true;
 
   @override
   void initState() {
@@ -180,6 +182,44 @@ class _MenuScreenState extends State<MenuScreen> {
                   _navTile(Icons.lightbulb_outline, 'Recommendations'),
                   _navTile(Icons.bookmark_border, 'Saved'),
                   _navTile(Icons.settings_outlined, 'Settings'),
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: const BoxDecoration(
+                            color: _mint,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.notifications_none,
+                            color: _green,
+                            size: 22,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        const Expanded(
+                          child: Text(
+                            'Mute notifications',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: _ink,
+                            ),
+                          ),
+                        ),
+                        CupertinoSwitch(
+                          value: _muteNotifications,
+                          activeTrackColor: _green,
+                          onChanged: (value) =>
+                              setState(() => _muteNotifications = value),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
