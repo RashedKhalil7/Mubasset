@@ -35,7 +35,14 @@ class _Recent {
 }
 
 class MenuScreen extends StatefulWidget {
-  const MenuScreen({super.key});
+  /// Called when the user taps Pin Chat. Connect this to the active chat screen
+  /// to pin the current conversation.
+  final VoidCallback? onPinChat;
+
+  /// Called when the user taps New Chat.
+  final VoidCallback? onNewChat;
+
+  const MenuScreen({super.key, this.onPinChat, this.onNewChat});
 
   @override
   State<MenuScreen> createState() => _MenuScreenState();
@@ -45,6 +52,7 @@ class _MenuScreenState extends State<MenuScreen> {
   String _fullName = 'User';
   String? _avatarUrl;
   bool _isLoadingUser = true;
+  bool _showPinnedChats = false;
 
   @override
   void initState() {
@@ -92,10 +100,49 @@ class _MenuScreenState extends State<MenuScreen> {
               padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
               child: _newChatButton(),
             ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+              child: _pinChatButton(),
+            ),
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
                 children: [
+                  if (_showPinnedChats) ...[
+                    const Padding(
+                      padding: EdgeInsets.only(left: 4, bottom: 8),
+                      child: Text(
+                        'PINNED CHATS',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 1.2,
+                          color: _muted,
+                        ),
+                      ),
+                    ),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: _mint,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.push_pin_outlined, color: _green),
+                          SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'Your pinned chats will appear here.',
+                              style: TextStyle(color: _ink, fontSize: 14),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                   const Padding(
                     padding: EdgeInsets.only(left: 4, bottom: 6),
                     child: Text(
@@ -191,7 +238,7 @@ class _MenuScreenState extends State<MenuScreen> {
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: () {},
+        onTap: widget.onNewChat,
         child: const Padding(
           padding: EdgeInsets.symmetric(
             vertical: 20,
@@ -212,6 +259,60 @@ class _MenuScreenState extends State<MenuScreen> {
                   fontSize: 17,
                   fontWeight: FontWeight.w600,
                 ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _pinChatButton() {
+    return Material(
+      color: _mint,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () {
+          setState(() => _showPinnedChats = !_showPinnedChats);
+
+          if (widget.onPinChat != null) {
+            widget.onPinChat!();
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Pinned Chats opened. Connect onPinChat to pin the active conversation.',
+                ),
+                duration: Duration(seconds: 3),
+              ),
+            );
+          }
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+          child: Row(
+            children: [
+              Icon(
+                _showPinnedChats ? Icons.push_pin : Icons.push_pin_outlined,
+                color: _green,
+                size: 22,
+              ),
+              const SizedBox(width: 14),
+              const Expanded(
+                child: Text(
+                  'Pin Chat',
+                  style: TextStyle(
+                    color: _ink,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Icon(
+                _showPinnedChats ? Icons.keyboard_arrow_up : Icons.chevron_right,
+                color: _green,
+                size: 22,
               ),
             ],
           ),
